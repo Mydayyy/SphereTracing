@@ -21,7 +21,7 @@ class Canvas extends React.Component {
     render() {
         return (
             <div>
-               <canvas width={600} height={600}></canvas>
+               <canvas width={900} height={900}></canvas>
             </div>
         );
     }
