@@ -2,10 +2,11 @@ import Vector2d from "~/logic/vector2d.js";
 import Vector from "./vector2d";
 
 function random(from, to) {
-    to += 1;
+    to++;
     return Math.floor(from + (Math.random() * (to - from)));
 }
 window.random = random;
+window.Vector2d = Vector2d;
 
 class SceneItem {
     constructor() {
@@ -22,6 +23,10 @@ class SceneItem {
 
     distanceTo(x, y) {
         throw "DISTANCE FUNCTION NOT IMPLEMENTED";
+    }
+
+    getNormal(x, y) {
+        throw "GET NORMAL FUNCTION NOT IMPLEMENTED";
     }
 
     mouseMove(x, y) {
@@ -55,11 +60,18 @@ class Circle extends SceneItem {
     distanceTo(x, y) {
         return Math.sqrt(Math.pow(this.x - x, 2) + Math.pow(this.y - y, 2)) - this.r;
     }
+
+    getNormal(x, y) {
+        let center = new Vector2d(this.x, this.y);
+        let target = new Vector2d(x, y);
+        let n = Vector2d.subtract(target, center);
+        return n.normalize();
+    }
 }
 
 class Box extends SceneItem {
     constructor(x, y, width, height) {
-        super(); 
+        super();
         this.x = x;
         this.y = y;
         this.width = width;
@@ -72,12 +84,61 @@ class Box extends SceneItem {
     }
 
     distanceTo(x, y) {
-        x += 0 - (this.x + this.width/2);
-        y += 0 - (this.y + this.height/2);
-        let b = new Vector2d(this.width/2, this.height/2);
+        x += 0 - (this.x + this.width / 2);
+        y += 0 - (this.y + this.height / 2);
+        let b = new Vector2d(this.width / 2, this.height / 2);
         let p = new Vector2d(x, y);
         let d = Vector2d.abs(p).subtract(b);
         return Vector2d.max(d, new Vector2d()).length() + Math.min(Math.max(d.x, d.y), 0.0);
+    }
+
+    getNormal(x, y) {
+        // let p = new Vector2d(x, y);
+        // let left = new Vector2d(this.x, this.y + this.height / 2);
+        // let top = new Vector2d(this.x + this.width / 2, this.y);
+        // let right = new Vector2d(this.x + this.width, this.y + this.height / 2);
+        // let bottom = new Vector2d(this.x + this.width / 2, this.y + this.height);
+
+        // let dleft = Math.abs(Vector2d.distance(left, p));
+        // let dtop = Math.abs(Vector2d.distance(top, p));
+        // let dright = Math.abs(Vector2d.distance(right, p));
+        // let dbottom = Math.abs(Vector2d.distance(bottom, p));
+
+        // let sleft = {n: new Vector2d(-1, 0), val: dleft};
+        // let stop = {n: new Vector2d(0, -1), val: dtop};
+        // let sright = {n: new Vector2d(1, 0), val: dright};
+        // let sbottom = {n: new Vector2d(0, 1), val: dbottom};
+
+        // let arr =  [sleft, stop, sright, sbottom];
+
+        // let n = arr.reduce(function(obj1, obj2){ 
+        //     return (obj1.val < obj2.val) ? obj1: obj2;        
+        //   }).n;
+
+        //   console.log(n);
+
+        if(y <= this.y) {
+            return new Vector2d(0, -1);
+        }
+
+        if(y >= this.y + this.height) {
+            return new Vector2d(0, 1);
+        }
+
+        if(x < this.x) {
+            return new Vector2d(-1, 0);
+        } 
+
+        if(x > this.x) {
+            return new Vector2d(1, 0);
+        }
+
+        throw "OMG";
+
+        // let center = new Vector2d(this.x, this.y);
+        // let target = new Vector2d(x, y);
+        // let n = Vector2d.subtract(target, center);
+        // return n.normalize();
     }
 }
 
@@ -156,29 +217,79 @@ class Scene {
         this.mousey = 0;
     }
 
-    getClosestObject(x, y, returnNegative=false) {
+    getClosestObject(x, y, returnNegative = false, ignoreAdditional=null) {
         let closestObject = null;
         let closestDistance = null;
 
-        for(let object of this.objects) {
-            if(object === this.player) {
+        for (let object of this.objects) {
+            if (object === this.player) {
+                continue;
+            }
+            if(ignoreAdditional !== null && ignoreAdditional === object) {
                 continue;
             }
             let distance = object.distanceTo(x, y);
-            if((distance < closestDistance || closestDistance === null) && (distance > 0 || returnNegative)) {
+            if ((distance < closestDistance || closestDistance === null) && (distance > 0 || returnNegative)) {
                 closestDistance = distance;
                 closestObject = object;
             }
         }
+        closestDistance = Math.floor(closestDistance);
+        return { closestObject, closestDistance }
+    }
 
-        return {closestObject, closestDistance}
+    shootRay(x, y, dir, ignoreAdditional=null) {
+        let MAX_TRACING_STEPS = 100;
+
+        for (let i = 0; i < MAX_TRACING_STEPS; i++) {
+            let { closestObject, closestDistance } = this.getClosestObject(x, y, true, ignoreAdditional);
+
+            if (closestDistance <= 0) {
+                if(i == 0) {
+                    return null;
+                }
+                let n = closestObject.getNormal(x, y);
+                this.context.beginPath();
+                this.context.moveTo(closestObject.x, closestObject.y);
+                this.context.lineTo(closestObject.x + 50 * n.x, closestObject.y + 50 * n.y);
+                this.context.stroke();
+
+    
+
+                let r = Vector2d.subtract(dir, Vector2d.multiply(n, Vector2d.dot(dir, n)*2));
+
+                
+                // this.context.beginPath();
+                // this.context.moveTo(x, y);
+                // this.context.lineTo(x + 50 * r.x, y + 50 * r.y);
+                // this.context.stroke();
+                return {x, y, r, bouncedFrom: closestObject};
+            }
+
+            if (x > this.canvas.width || x < 0 || y < 0 || y > this.canvas.height) {
+                return null;
+            }
+
+            this.context.strokeStyle = "#00ff33";
+            this.context.beginPath();
+            this.context.arc(x, y, closestDistance, 0, 2 * Math.PI);
+            this.context.stroke();
+
+            this.context.strokeStyle = "#ff0000";
+            this.context.beginPath();
+            this.context.moveTo(x, y);
+            this.context.lineTo(x + dir.x * closestDistance, y + dir.y * closestDistance);
+            this.context.stroke();
+
+            x = x + dir.x * (closestDistance);
+            y = y + dir.y * (closestDistance);
+        }
+
+        console.log("MAX TRACING REACHED");
+        return null;
     }
 
     updatePlayerRay() {
-        
-
-        let MAX_TRACING_STEPS = 100;
-
         let x = this.player.x;
         let y = this.player.y;
 
@@ -188,41 +299,19 @@ class Scene {
         let v = new Vector2d(dx - x, dy - y);
         v = v.normalize();
 
-
-
-        for(let i = 0; i < MAX_TRACING_STEPS; i++) {
-            let {closestObject, closestDistance} = this.getClosestObject(x, y, true);
-
-            if(closestDistance < 0) {
-                break;
-            }
-
-            if(x > this.canvas.width || x < 0 || y < 0 || y > this.canvas.height) {
-                break;
-            }
-
-            this.context.strokeStyle = "#00ff33";
-            this.context.beginPath();
-            this.context.arc(x, y, closestDistance, 0, 2*Math.PI);
-            this.context.stroke();
-
-            this.context.strokeStyle = "#ff0000";
-            this.context.beginPath();
-            this.context.moveTo(x, y);
-            this.context.lineTo(x + v.x * closestDistance, y + v.y * closestDistance);
-            this.context.stroke();
-
-            x = x + v.x * closestDistance;
-            y = y + v.y * closestDistance;
+        let r = this.shootRay(x, y, v);
+        let idx = 0; 
+        while(r !== null && idx < 50) {
+            r = this.shootRay(r.x, r.y, r.r, r.bouncedFrom);
+            idx++;
         }
-
-    } 
+    }
 
     updatePlayerCircle() {
         return;
-        let {closestObject, closestDistance} = this.getClosestObject(this.player.x, this.player.y);
+        let { closestObject, closestDistance } = this.getClosestObject(this.player.x, this.player.y);
 
-        if(closestDistance === null) {
+        if (closestDistance === null) {
             return;
         }
 
@@ -291,10 +380,10 @@ class Main {
 
         this.scene = new Scene(this.canvas, this.context);
 
-        for(let i = 0; i < 30; i++) {
+        for (let i = 0; i < 30; i++) {
             let x = random(0, this.canvas.width);
             let y = random(0, this.canvas.height);
-            if(Math.random() > 0.5) {
+            if (Math.random() > 0.5) {
                 let r = random(5, 40);
                 this.scene.addItem(new Circle(x, y, r))
             } else {
