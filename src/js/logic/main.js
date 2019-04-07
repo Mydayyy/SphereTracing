@@ -1,4 +1,5 @@
 import Vector2d from "~/logic/vector2d.js";
+import Vector from "./vector2d";
 
 function random(from, to) {
     to += 1;
@@ -53,6 +54,30 @@ class Circle extends SceneItem {
 
     distanceTo(x, y) {
         return Math.sqrt(Math.pow(this.x - x, 2) + Math.pow(this.y - y, 2)) - this.r;
+    }
+}
+
+class Box extends SceneItem {
+    constructor(x, y, width, height) {
+        super(); 
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+    render(context) {
+        context.beginPath();
+        context.rect(this.x, this.y, this.width, this.height);
+        context.fill();
+    }
+
+    distanceTo(x, y) {
+        x += 0 - (this.x + this.width/2);
+        y += 0 - (this.y + this.height/2);
+        let b = new Vector2d(this.width/2, this.height/2);
+        let p = new Vector2d(x, y);
+        let d = Vector2d.abs(p).subtract(b);
+        return Vector2d.max(d, new Vector2d()).length() + Math.min(Math.max(d.x, d.y), 0.0);
     }
 }
 
@@ -152,7 +177,7 @@ class Scene {
     updatePlayerRay() {
         
 
-        let MAX_TRACING_STEPS = 111;
+        let MAX_TRACING_STEPS = 100;
 
         let x = this.player.x;
         let y = this.player.y;
@@ -214,17 +239,18 @@ class Scene {
     }
 
     render(context) {
+        for (let object of this.objects) {
+            context.save();
+            object.render(context);
+            context.restore();
+        }
         context.save();
         this.updatePlayerCircle();
         context.restore();
         context.save();
         this.updatePlayerRay();
         context.restore();
-        for (let object of this.objects) {
-            context.save();
-            object.render(context);
-            context.restore();
-        }
+
     }
 
     mouseMove(x, y) {
@@ -265,11 +291,17 @@ class Main {
 
         this.scene = new Scene(this.canvas, this.context);
 
-        for(let i = 0; i < 20; i++) {
+        for(let i = 0; i < 30; i++) {
             let x = random(0, this.canvas.width);
             let y = random(0, this.canvas.height);
-            let r = random(0, 60);
-            this.scene.addItem(new Circle(x, y, r))
+            if(Math.random() > 0.5) {
+                let r = random(5, 40);
+                this.scene.addItem(new Circle(x, y, r))
+            } else {
+                let w = random(10, 120);
+                let h = random(10, 120);
+                this.scene.addItem(new Box(x, y, w, h))
+            }
         }
 
         this.scene.addItem(new Player(30, 30, 5));

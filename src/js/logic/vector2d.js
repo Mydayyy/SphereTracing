@@ -127,5 +127,15 @@ Vector.dot = function(a, b) {
 Vector.cross = function(a, b) {
 	return a.x * b.y - a.y * b.x;
 };
+Vector.abs = function(v) {
+    return new Vector(Math.abs(v.x), Math.abs(v.y));
+}
+Vector.max = function(v, q) {
+    let p = new Vector();
+    p.x = Math.max(v.x, q.x);
+    p.y = Math.max(v.y, q.y);
+
+    return p;
+}
 
 export default Vector;
