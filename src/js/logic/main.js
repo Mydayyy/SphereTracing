@@ -244,7 +244,7 @@ class Scene {
         for (let i = 0; i < MAX_TRACING_STEPS; i++) {
             let { closestObject, closestDistance } = this.getClosestObject(x, y, true, ignoreAdditional);
 
-            if (closestDistance <= 0.00000001) {
+            if (closestDistance <= 0.1) {
                 if (i == 0) {
                     return null;
                 }
