@@ -117,19 +117,19 @@ class Box extends SceneItem {
 
         //   console.log(n);
 
-        if(y <= this.y) {
+        if (y <= this.y) {
             return new Vector2d(0, -1);
         }
 
-        if(y >= this.y + this.height) {
+        if (y >= this.y + this.height) {
             return new Vector2d(0, 1);
         }
 
-        if(x < this.x) {
+        if (x < this.x) {
             return new Vector2d(-1, 0);
-        } 
+        }
 
-        if(x > this.x) {
+        if (x > this.x) {
             return new Vector2d(1, 0);
         }
 
@@ -217,7 +217,7 @@ class Scene {
         this.mousey = 0;
     }
 
-    getClosestObject(x, y, returnNegative = false, ignoreAdditional=null) {
+    getClosestObject(x, y, returnNegative = false, ignoreAdditional = null) {
         let closestObject = null;
         let closestDistance = null;
 
@@ -225,7 +225,7 @@ class Scene {
             if (object === this.player) {
                 continue;
             }
-            if(ignoreAdditional !== null && ignoreAdditional === object) {
+            if (ignoreAdditional !== null && ignoreAdditional === object) {
                 continue;
             }
             let distance = object.distanceTo(x, y);
@@ -234,36 +234,38 @@ class Scene {
                 closestObject = object;
             }
         }
-        closestDistance = Math.floor(closestDistance);
+        // closestDistance = Math.floor(closestDistance);
         return { closestObject, closestDistance }
     }
 
-    shootRay(x, y, dir, ignoreAdditional=null) {
+    shootRay(x, y, dir, ignoreAdditional = null) {
         let MAX_TRACING_STEPS = 100;
 
         for (let i = 0; i < MAX_TRACING_STEPS; i++) {
             let { closestObject, closestDistance } = this.getClosestObject(x, y, true, ignoreAdditional);
 
-            if (closestDistance <= 0) {
-                if(i == 0) {
+            if (closestDistance <= 0.00000001) {
+                if (i == 0) {
                     return null;
                 }
                 let n = closestObject.getNormal(x, y);
+
+                this.context.strokeStyle = "#FF00FF";
                 this.context.beginPath();
                 this.context.moveTo(closestObject.x, closestObject.y);
                 this.context.lineTo(closestObject.x + 50 * n.x, closestObject.y + 50 * n.y);
                 this.context.stroke();
 
-    
 
-                let r = Vector2d.subtract(dir, Vector2d.multiply(n, Vector2d.dot(dir, n)*2));
 
-                
+                let r = Vector2d.subtract(dir, Vector2d.multiply(n, Vector2d.dot(dir, n) * 2));
+
+
                 // this.context.beginPath();
                 // this.context.moveTo(x, y);
                 // this.context.lineTo(x + 50 * r.x, y + 50 * r.y);
                 // this.context.stroke();
-                return {x, y, r, bouncedFrom: closestObject};
+                return { x, y, r, bouncedFrom: closestObject };
             }
 
             if (x > this.canvas.width || x < 0 || y < 0 || y > this.canvas.height) {
@@ -300,25 +302,11 @@ class Scene {
         v = v.normalize();
 
         let r = this.shootRay(x, y, v);
-        let idx = 0; 
-        while(r !== null && idx < 50) {
+        let idx = 0;
+        while (r !== null && idx < 50) {
             r = this.shootRay(r.x, r.y, r.r, r.bouncedFrom);
             idx++;
         }
-    }
-
-    updatePlayerCircle() {
-        return;
-        let { closestObject, closestDistance } = this.getClosestObject(this.player.x, this.player.y);
-
-        if (closestDistance === null) {
-            return;
-        }
-
-        this.context.beginPath();
-        this.context.arc(this.player.x, this.player.y, closestDistance, 0, 2 * Math.PI);
-        this.context.strokeStyle = "#00FF00";
-        this.context.stroke();
     }
 
     update(dt) {
@@ -333,9 +321,6 @@ class Scene {
             object.render(context);
             context.restore();
         }
-        context.save();
-        this.updatePlayerCircle();
-        context.restore();
         context.save();
         this.updatePlayerRay();
         context.restore();
