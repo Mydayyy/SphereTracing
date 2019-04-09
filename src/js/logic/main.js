@@ -239,7 +239,7 @@ class Scene {
     }
 
     shootRay(x, y, dir, ignoreAdditional = null) {
-        let MAX_TRACING_STEPS = 100;
+        let MAX_TRACING_STEPS = 1500;
 
         for (let i = 0; i < MAX_TRACING_STEPS; i++) {
             let { closestObject, closestDistance } = this.getClosestObject(x, y, true, ignoreAdditional);
