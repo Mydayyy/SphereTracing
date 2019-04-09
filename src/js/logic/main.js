@@ -1,211 +1,10 @@
 import Vector2d from "~/logic/vector2d.js";
-import Vector from "./vector2d";
 
-function random(from, to) {
-    to++;
-    return Math.floor(from + (Math.random() * (to - from)));
-}
-window.random = random;
-window.Vector2d = Vector2d;
+import Box from "~/logic/geometry/box";
+import Circle from "~/logic/geometry/circle";
+import Player from "~/logic/player";
 
-class SceneItem {
-    constructor() {
-        this.x = 0;
-        this.y = 0;
-    }
-
-    update(dt) {
-    }
-
-    render(context) {
-        console.log("Empty render");
-    }
-
-    distanceTo(x, y) {
-        throw "DISTANCE FUNCTION NOT IMPLEMENTED";
-    }
-
-    getNormal(x, y) {
-        throw "GET NORMAL FUNCTION NOT IMPLEMENTED";
-    }
-
-    mouseMove(x, y) {
-    }
-
-    mouseDown(x, y) {
-    }
-
-    keydown(ev) {
-
-    }
-
-    keyup(ev) {
-
-    }
-}
-
-class Circle extends SceneItem {
-    constructor(x, y, r) {
-        super();
-        this.x = x;
-        this.y = y;
-        this.r = r;
-    }
-    render(context) {
-        context.beginPath();
-        context.arc(this.x, this.y, this.r, 0, 2 * Math.PI);
-        context.fill();
-    }
-
-    distanceTo(x, y) {
-        return Math.sqrt(Math.pow(this.x - x, 2) + Math.pow(this.y - y, 2)) - this.r;
-    }
-
-    getNormal(x, y) {
-        let center = new Vector2d(this.x, this.y);
-        let target = new Vector2d(x, y);
-        let n = Vector2d.subtract(target, center);
-        return n.normalize();
-    }
-}
-
-class Box extends SceneItem {
-    constructor(x, y, width, height) {
-        super();
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
-    }
-    render(context) {
-        context.beginPath();
-        context.rect(this.x, this.y, this.width, this.height);
-        context.fill();
-    }
-
-    distanceTo(x, y) {
-        x += 0 - (this.x + this.width / 2);
-        y += 0 - (this.y + this.height / 2);
-        let b = new Vector2d(this.width / 2, this.height / 2);
-        let p = new Vector2d(x, y);
-        let d = Vector2d.abs(p).subtract(b);
-        return Vector2d.max(d, new Vector2d()).length() + Math.min(Math.max(d.x, d.y), 0.0);
-    }
-
-    getNormal(x, y) {
-        // let p = new Vector2d(x, y);
-        // let left = new Vector2d(this.x, this.y + this.height / 2);
-        // let top = new Vector2d(this.x + this.width / 2, this.y);
-        // let right = new Vector2d(this.x + this.width, this.y + this.height / 2);
-        // let bottom = new Vector2d(this.x + this.width / 2, this.y + this.height);
-
-        // let dleft = Math.abs(Vector2d.distance(left, p));
-        // let dtop = Math.abs(Vector2d.distance(top, p));
-        // let dright = Math.abs(Vector2d.distance(right, p));
-        // let dbottom = Math.abs(Vector2d.distance(bottom, p));
-
-        // let sleft = {n: new Vector2d(-1, 0), val: dleft};
-        // let stop = {n: new Vector2d(0, -1), val: dtop};
-        // let sright = {n: new Vector2d(1, 0), val: dright};
-        // let sbottom = {n: new Vector2d(0, 1), val: dbottom};
-
-        // let arr =  [sleft, stop, sright, sbottom];
-
-        // let n = arr.reduce(function(obj1, obj2){ 
-        //     return (obj1.val < obj2.val) ? obj1: obj2;        
-        //   }).n;
-
-        //   console.log(n);
-
-        if (y <= this.y) {
-            return new Vector2d(0, -1);
-        }
-
-        if (y >= this.y + this.height) {
-            return new Vector2d(0, 1);
-        }
-
-        if (x < this.x) {
-            return new Vector2d(-1, 0);
-        }
-
-        if (x > this.x) {
-            return new Vector2d(1, 0);
-        }
-
-        throw "OMG";
-
-        // let center = new Vector2d(this.x, this.y);
-        // let target = new Vector2d(x, y);
-        // let n = Vector2d.subtract(target, center);
-        // return n.normalize();
-    }
-}
-
-class Player extends Circle {
-    constructor(x, y, r) {
-        super(x, y, r);
-        this.speed = 60;
-        this.right = this.left = this.right = this.up = false;
-        this.mouseX = 0;
-        this.mouseY = 0;
-    }
-
-    render(context) {
-        context.fillStyle = "#0000FF";
-        super.render(context);
-    }
-
-    update(dt) {
-        if (this.up) {
-            this.y -= this.speed * dt;
-        }
-        if (this.down) {
-            this.y += this.speed * dt;
-        }
-        if (this.left) {
-            this.x -= this.speed * dt;
-        }
-        if (this.right) {
-            this.x += this.speed * dt;
-        }
-    }
-
-    mouseMove(x, y) {
-        this.mouseX = x;
-        this.mouseY = y;
-    }
-
-    keydown(ev) {
-        if (ev.key === "d") {
-            this.right = true;
-        }
-        if (ev.key === "a") {
-            this.left = true;
-        }
-        if (ev.key === "w") {
-            this.up = true;
-        }
-        if (ev.key === "s") {
-            this.down = true;
-        }
-    }
-
-    keyup(ev) {
-        if (ev.key === "d") {
-            this.right = false;
-        }
-        if (ev.key === "a") {
-            this.left = false;
-        }
-        if (ev.key === "w") {
-            this.up = false;
-        }
-        if (ev.key === "s") {
-            this.down = false;
-        }
-    }
-}
+import {random} from "~/logic/util";
 
 class Scene {
     constructor(canvas, context) {
@@ -324,7 +123,6 @@ class Scene {
         context.save();
         this.updatePlayerRay();
         context.restore();
-
     }
 
     mouseMove(x, y) {
@@ -353,6 +151,10 @@ class Scene {
             this.player = item;
         }
     }
+
+    removeItem(item) {
+        throw "NOT IMPLEMENTED";
+    }
 }
 
 
@@ -370,15 +172,15 @@ class Main {
             let y = random(0, this.canvas.height);
             if (Math.random() > 0.5) {
                 let r = random(5, 40);
-                this.scene.addItem(new Circle(x, y, r))
+                this.scene.addItem(new Circle(this.scene, x, y, r))
             } else {
                 let w = random(10, 120);
                 let h = random(10, 120);
-                this.scene.addItem(new Box(x, y, w, h))
+                this.scene.addItem(new Box(this.scene, x, y, w, h))
             }
         }
 
-        this.scene.addItem(new Player(30, 30, 5));
+        this.scene.addItem(new Player(this.scene, 30, 30, 5));
 
         this.setupListeners();
 
